@@ -1,4 +1,6 @@
 using System;
+using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace HTMLQuery
 {
@@ -28,6 +30,14 @@ namespace HTMLQuery
         {
             int start = input.IndexOf(from) + 1;
             return input.Substring(start, input.IndexOf(to) - start);
+        }
+
+        public static string[] InclusiveSplit(this string input, string[] delimiters)
+        {
+            // Build a regex and split the string on the start and end tags
+            // Regex is used because regular string.split removed the original split string
+            string pattern = "(" + string.Join("|", (from d in delimiters select Regex.Escape(d)).ToArray<string>()) + ")";
+            return Regex.Split(input, pattern);
         }
     }
 }
