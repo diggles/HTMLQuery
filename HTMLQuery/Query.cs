@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace HTMLQuery
@@ -33,8 +34,9 @@ namespace HTMLQuery
         /// Selector method for selecting elements
         /// </summary>
         /// <param name="selector">CSS selector (i.e. #id, .class, element, [property]value)</param>
+        /// <param name="searchChildren">Whether or not to traverse child elements</param>
         /// <returns>Array of Query containing the selected elements</returns>
-        public Query[] Select(string selector)
+        public Query[] Select(string selector, bool searchChildren)
         {
             char qualifier = selector[0];
             int[] indices = null;
@@ -43,23 +45,22 @@ namespace HTMLQuery
             switch (qualifier)
             {
                 case '#': // Element ID
-                    { 
-                        this.Select("[id]" + selector.Substring(1));
-                        break;
+                    {
+                        return this.Select("[id]" + selector.Substring(1), searchChildren);
                     }
                 case '.': // Element Class
                     {
-                        indices = this.GetSplitIndices(selector.Substring(1));
+                        indices = this.GetSplitIndices(selector.Substring(1), searchChildren);
                         break;
                     }
                 case '[': // Custom Element Property
                     {
-                        indices = this.GetSplitIndices(selector.Substring(1, selector.IndexOf(']') - 1) + "=\"" + selector.Substring(selector.IndexOf(']') + 1) + "\"");
+                        indices = this.GetSplitIndices(selector.Substring(1, selector.IndexOf(']') - 1) + "=\"" + selector.Substring(selector.IndexOf(']') + 1) + "\"", searchChildren);
                         break;
                     }
                 default: // Element Type
                     {
-                        indices = this.GetSplitIndices("<" + selector);
+                        indices = this.GetSplitIndices("<" + selector, searchChildren);
                         break;
                     }
             }
@@ -83,6 +84,12 @@ namespace HTMLQuery
             return temp.ToArray();
         }
 
+        // Override for the most common case
+        public Query[] Select(string selector)
+        {
+            return this.Select(selector, true);
+        }
+
         /// <summary>
         /// Gets the value of a perperty in an element
         /// Only queries the first element in this.Source
@@ -95,21 +102,38 @@ namespace HTMLQuery
                 throw new InvalidOperationException("Method may only be used on a Query containing an element");
 
             string name = property + "=\"";
-            string start = this.Source.Substring(this.Source.IndexOf(name) + name.Length);
-            return new Query(start.Remove(start.IndexOf("\"")));
+            string start = this.Source.Substring(this.Source.IndexOf(name, System.StringComparison.Ordinal) + name.Length);
+            return new Query(start.Remove(start.IndexOf("\"", System.StringComparison.Ordinal)));
         }
 
         /// <summary>
         /// Gets the inner html of this.Query
         /// </summary>
         /// <returns>The HTML between the start/end tags</returns>
-        public Query Inner()
+        private Query InnerHtml()
+        {
+            return new Query(StripOuterTags(this.Source));
+        }
+
+        private string StripOuterTags(string input)
         {
             if (this.Source[0] != '<')
                 throw new InvalidOperationException("Method may only be used on a Query containing an element");
 
             int start = this.Source.IndexOf('>') + 1;
-            return new Query(this.Source.Substring(start, this.Source.Length - start - this.FindTagName(0).Length - 3));
+            return input.Substring(start, this.Source.Length - start - this.FindTagName(0).Length - 3);
+        }
+
+        /// <summary>
+        /// Gets the inner text of this.Query
+        /// </summary>
+        /// <returns>The text with any child elements removed</returns>
+        public Query InnerText()
+        {
+            if (this.Source[0] != '<')
+                throw new InvalidOperationException("Method may only be used on a Query containing an element");
+
+            return new Query(Regex.Replace(this.InnerHtml().ToString(), "<[^>]*>*</[^>]*>", string.Empty));
         }
 
         /// <summary>
@@ -135,26 +159,77 @@ namespace HTMLQuery
         /// </summary>
         /// <param name="splitter">The search string</param>
         /// <returns>An array of start indices</returns>
-        private int[] GetSplitIndices(string splitter)
+        private int[] GetSplitIndices(string splitter, bool searchChildren)
         {
             if (!this.Source.Contains(splitter))
                 throw new ArgumentException("No instances of " + splitter + " found");
 
-            string[] split = this.Source.Split(new string[] { splitter }, StringSplitOptions.RemoveEmptyEntries);
+            string workingSource = searchChildren ? this.Source : this.Flatten();
 
-            int length = split[0].Length;
-            int[] indices = new int[split.Length - 1];
+            string[] split = workingSource.InclusiveSplit(new string[] { splitter });
+
+            int length = 0;
+            List<int> indices = new List<int>();
             
-            for (int i = 1; i < split.Length; i++)
+            foreach (string element in split)
             {
                 // Add the start index of the current split
-                indices[i - 1] = length + 1;
-
+                if (element.Contains(splitter))
+                    indices.Add(length + 1);    
+                
                 // Increment start index
-                length += split[i].Length + splitter.Length;
+                // TODO: Implement this
+                //if (searchChildren)
+                
+                length += element.Length;
             }
             
-            return indices;
+            return indices.ToArray();
+        }
+
+        /// <summary>
+        /// Removes all child elements
+        /// </summary>
+        /// <returns>A new Query with only top level elements remaining</returns>
+        private string Flatten()
+        {
+            if(!this.Source.Contains('<'))
+                return this.Source;
+
+            StringBuilder sb = new StringBuilder();
+
+            string workingSource = this.Source;
+            int index = 0;
+
+            int start = workingSource.IndexOf('<');
+            string workingTag = workingSource.Substring(start, FindEndTag(start));
+
+            string startTag = workingTag.Substring(0, workingTag.IndexOf('>') + 1);
+            string endTag = workingTag.Substring(workingTag.LastIndexOf('<'));
+
+            workingTag = this.StripOuterTags(workingTag).Clone().ToString();
+
+            while (workingTag.Contains('<'))
+            {
+                sb.Append(TakeClean(workingTag));
+                workingTag = StripNext(workingTag);
+            }
+
+            sb.Append(workingTag);
+
+            return startTag + sb.ToString() + endTag;
+        }
+
+        private string StripNext(string input)
+        {
+            int end = FindEndTag(input, input.IndexOf('<'));
+            return input.Remove(0, end);
+        }
+
+        private string TakeClean(string input)
+        {
+            string output = input.Substring(0, input.IndexOf('<'));
+            return input.Remove(0, output.Length);
         }
 
         /// <summary>
@@ -164,7 +239,12 @@ namespace HTMLQuery
         /// <returns>The position index of the start tag</returns>
         private int FindStartTag(int start)
         {
-            string str = this.Source.Substring(0, start);
+            return this.FindStartTag(this.Source, start);
+        }
+
+        private int FindStartTag(string input, int start)
+        {
+            string str = input.Substring(0, start);
             return str.LastIndexOf('<');
         }
 
@@ -175,26 +255,28 @@ namespace HTMLQuery
         /// <returns>The position index of the final character in this tag</returns>
         private int FindEndTag(int start)
         {
-            string workingSource = this.Source.Substring(start);
+            return this.FindEndTag(this.Source, start);
+        }
+
+        private int FindEndTag(string input, int start)
+        {
+            string workingSource = input.Substring(start);
 
             if (workingSource[0] != '<')
                 throw new ArgumentException("The source must begin with a tag");
 
-            string tag = this.FindTagName(start);
+            string tag = this.FindTagName(input, start);
             string startTag = "<" + tag;
             string endTag = "</" + tag + ">";
-            
+
             // Build a regex and split the string on the start and end tags
             // Regex is used because regular string.split removed the original split string
-            List<string> delimiters = new List<string>
+            string[] parts = workingSource.InclusiveSplit(new string[]
 			{
 				startTag,
 				endTag
-			};
-            string pattern = "(" + string.Join("|", ( from d in delimiters select Regex.Escape(d)).ToArray<string>()) + ")";
-            string[] parts = Regex.Split(workingSource, pattern);
-            
-            
+			});
+
             int index = parts[0].Length;
             int opens = 0;
 
@@ -206,7 +288,7 @@ namespace HTMLQuery
                     opens--; // If we have an end tag, decrement 
 
                 index += parts[i].Length;
-                
+
                 if (opens == 0) // If we have found as many close tags as we have open tags, we have the matching end tag
                     return index;
             }
@@ -224,7 +306,12 @@ namespace HTMLQuery
         /// <returns>The tag name</returns>
         private string FindTagName(int start)
         {
-            string clean = this.Source.Substring(start).Delete().TrimStart(new char[0]);
+            return this.FindTagName(this.Source, start);
+        }
+
+        private string FindTagName(string input, int start)
+        {
+            string clean = input.Substring(start).Delete().TrimStart(new char[0]);
             return clean.Substring(0, clean.IndexOfAny(new char[]
 			{
 				' ',
