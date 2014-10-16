@@ -27,7 +27,11 @@ namespace HTMLQuery
         /// <param name="source">The HTML Source</param>
         public Query(string source)
         {
-            this.Source = source.Replace('\r', ' ').Replace('\n', ' ');
+            this.Source = source.Replace('\r', ' ').Replace('\n', ' ').Replace('\t', ' ');
+            
+            // Strip doctype
+            if(source.ToLower().Contains("html"))
+                this.Source = this.Source.Remove(0, this.Source.IndexOf("<html>", System.StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -110,7 +114,7 @@ namespace HTMLQuery
         /// Gets the inner html of this.Query
         /// </summary>
         /// <returns>The HTML between the start/end tags</returns>
-        private Query InnerHtml()
+        public Query InnerHtml()
         {
             return new Query(StripOuterTags(this.Source));
         }
@@ -162,9 +166,10 @@ namespace HTMLQuery
         private int[] GetSplitIndices(string splitter, bool searchChildren)
         {
             if (!this.Source.Contains(splitter))
-                throw new ArgumentException("No instances of " + splitter + " found");
+                return new int[] {};
+                //throw new ArgumentException("No instances of " + splitter + " found");
 
-            string workingSource = searchChildren ? this.Source : this.Flatten();
+            string workingSource = searchChildren ? this.Source : this.Flatten().Source;
 
             string[] split = workingSource.InclusiveSplit(new string[] { splitter });
 
@@ -191,10 +196,10 @@ namespace HTMLQuery
         /// Removes all child elements
         /// </summary>
         /// <returns>A new Query with only top level elements remaining</returns>
-        private string Flatten()
+        public Query Flatten()
         {
             if(!this.Source.Contains('<'))
-                return this.Source;
+                return new Query(this.Source);
 
             StringBuilder sb = new StringBuilder();
 
@@ -217,7 +222,7 @@ namespace HTMLQuery
 
             sb.Append(workingTag);
 
-            return startTag + sb.ToString() + endTag;
+            return new Query(startTag + sb.ToString() + endTag);
         }
 
         private string StripNext(string input)
@@ -294,7 +299,7 @@ namespace HTMLQuery
             }
 
             if (opens > 0)
-                throw new NullReferenceException("No matching end tag");
+                throw new NullReferenceException("No matching end tag for " + tag);
 
             throw new InvalidOperationException("No tag found");
         }
