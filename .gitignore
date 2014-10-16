@@ -36,5 +36,6 @@ Icon
 .Trashes
 
 #.binaries
-bin/*
-obj/*
+*/bin/*
+*/obj/*
+*.suo
