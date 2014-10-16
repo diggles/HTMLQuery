@@ -1,6 +1,1 @@
-To use just add Query.cs and Extensions.cs to your project and add a reference to HTMLQuery
-
-For example
-
-using HTMLQuery;
-
+Simple HTML selector lib using string manipulation and regex
