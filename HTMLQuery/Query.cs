@@ -204,7 +204,6 @@ namespace HTMLQuery
             StringBuilder sb = new StringBuilder();
 
             string workingSource = this.Source;
-            int index = 0;
 
             int start = workingSource.IndexOf('<');
             string workingTag = workingSource.Substring(start, FindEndTag(start));

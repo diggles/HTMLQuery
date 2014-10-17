@@ -11,7 +11,7 @@ namespace HTMLQueryTests
     [TestClass]
     public class Selectors
     {
-        private Query q;
+        private Query _query;
 
         public Selectors()
         {
@@ -20,59 +20,98 @@ namespace HTMLQueryTests
 
         private void Reset()
         {
-            q = new Query(File.ReadAllText("Selectors.html"));
+            _query = new Query(File.ReadAllText("Selectors.html"));
         }
+
+        /// <summary>
+        /// ID Selection tests
+        /// </summary>
 
         [TestMethod]
         public void IdSelect()
         {
-            Reset();
-            Assert.AreEqual(q.Select("#anId").Count(), 1);
+            Assert.AreEqual(1, _query.Select("#anId").Count());
         }
 
         [TestMethod]
         public void IdSelectFail()
         {
-            Reset();
-            Assert.AreEqual(q.Select("#aClass").Count(), 0);
-        }
-
-        [TestMethod]
-        public void ClassSelect()
-        {
-            Reset();
-            Assert.AreEqual(q.Select(".aClass").Count(), 1);
-        }
-
-        [TestMethod]
-        public void ClassSelectFail()
-        {
-            Reset();
-            Assert.AreEqual(q.Select("#aClass").Count(), 0);
+            Assert.AreEqual(0, _query.Select("#aClass").Count());
         }
 
         [TestMethod]
         public void ChildIdSelect()
         {
-            Reset();
-            Assert.AreEqual(q.Select("#anotherId").Count(), 1);
+            Assert.AreEqual(1, _query.Select("#anotherId").Count());
         }
 
         [TestMethod]
         public void ChildIdSelectFail()
         {
-            Reset();
-            log(q.Source);
-            log(q.Flatten().Source);
-            log(q.InnerHtml().Source);
-            log(q.Select("#anId").First().Source);
-            Assert.IsTrue(true);
-            //Assert.AreEqual(q.Select("#anotherId", false).Count(), 0);
+            Assert.AreEqual(0, _query.Select("#anotherId", false).Count());
         }
 
-        private void log(string msg)
+        /// <summary>
+        /// Class Selection tests
+        /// </summary>
+
+        [TestMethod]
+        public void ClassSelect()
         {
-            Debug.WriteLine(msg + "\r\n--------------------------------");
+            Assert.AreEqual(1, _query.Select(".aClass").Count());
+        }
+
+        [TestMethod]
+        public void ClassSelectFail()
+        {
+            Assert.AreEqual(0, _query.Select(".inId").Count());
+        }
+
+
+        /// <summary>
+        /// Element name Selection tests
+        /// </summary>
+
+        [TestMethod]
+        public void ElementNameSelect()
+        {
+            Assert.AreEqual(1, _query.Select("body").Count());
+        }
+
+        [TestMethod]
+        public void MultipleElementNameSelect()
+        {
+            Assert.AreEqual(3, _query.Select("div").Count());
+        }
+
+        [TestMethod]
+        public void ElementNameSelectFail()
+        {
+            Assert.AreEqual(0, _query.Select("invalid").Count());
+        }
+
+
+        /// <summary>
+        /// Element property Selection tests
+        /// </summary>
+
+
+        [TestMethod]
+        public void ElementPropertySelect()
+        {
+            Assert.AreEqual("Option 2", _query.Select("[selected]selected").First().InnerText());
+        }
+
+        [TestMethod]
+        public void ElementPropertySelectFail()
+        {
+            Assert.AreEqual(0, _query.Select("[selected]invalid").Count());
+        }
+
+        [TestMethod]
+        public void ToplevelFlatten()
+        {
+            Assert.AreEqual(string.Empty, _query.Select("html").First().Flatten().InnerHtml().Source.Trim());
         }
 
     }
