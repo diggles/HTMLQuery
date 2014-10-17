@@ -31,7 +31,7 @@ namespace HTMLQuery
             
             // Strip doctype
             if(source.ToLower().Contains("html"))
-                this.Source = this.Source.Remove(0, this.Source.IndexOf("<html>", System.StringComparison.OrdinalIgnoreCase));
+                this.Source = this.Source.Remove(0, this.Source.IndexOf("<html>", System.StringComparison.OrdinalIgnoreCase)).Trim();
         }
 
         /// <summary>
@@ -125,19 +125,19 @@ namespace HTMLQuery
                 throw new InvalidOperationException("Method may only be used on a Query containing an element");
 
             int start = this.Source.IndexOf('>') + 1;
-            return input.Substring(start, this.Source.Length - start - this.FindTagName(0).Length - 3);
+            return input.Substring(start, this.Source.Length - start - this.FindTagName(0).Length - 3).Trim();
         }
 
         /// <summary>
         /// Gets the inner text of this.Query
         /// </summary>
         /// <returns>The text with any child elements removed</returns>
-        public Query InnerText()
+        public string InnerText()
         {
             if (this.Source[0] != '<')
                 throw new InvalidOperationException("Method may only be used on a Query containing an element");
 
-            return new Query(Regex.Replace(this.InnerHtml().ToString(), "<[^>]*>*</[^>]*>", string.Empty));
+            return Regex.Replace(this.InnerHtml().ToString(), "<[^>]*>*</[^>]*>", string.Empty);
         }
 
         /// <summary>
@@ -194,6 +194,7 @@ namespace HTMLQuery
 
         /// <summary>
         /// Removes all child elements
+        /// If there are multiple top-level elements only the first one is returned
         /// </summary>
         /// <returns>A new Query with only top level elements remaining</returns>
         public Query Flatten()
@@ -206,16 +207,24 @@ namespace HTMLQuery
             string workingSource = this.Source;
 
             int start = workingSource.IndexOf('<');
+
+            // Scope the source to just the top tag
             string workingTag = workingSource.Substring(start, FindEndTag(start));
 
             string startTag = workingTag.Substring(0, workingTag.IndexOf('>') + 1);
             string endTag = workingTag.Substring(workingTag.LastIndexOf('<'));
 
+            // Strip the outertags and re-scope to the content
+            // we need to strip the child tags from this markup
             workingTag = this.StripOuterTags(workingTag).Clone().ToString();
 
+            // While there are remaining child tags
             while (workingTag.Contains('<'))
             {
-                sb.Append(TakeClean(workingTag));
+                // Save any text 
+                sb.Append(TakeClean(ref workingTag));
+                
+                // And strip the next tag
                 workingTag = StripNext(workingTag);
             }
 
@@ -230,10 +239,11 @@ namespace HTMLQuery
             return input.Remove(0, end);
         }
 
-        private string TakeClean(string input)
+        private string TakeClean(ref string input)
         {
             string output = input.Substring(0, input.IndexOf('<'));
-            return input.Remove(0, output.Length);
+            input = input.Substring(output.Length);
+            return output;
         }
 
         /// <summary>
