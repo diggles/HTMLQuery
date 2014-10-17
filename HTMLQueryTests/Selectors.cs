@@ -1,19 +1,16 @@
-﻿using System;
-using System.Diagnostics;
+﻿using HTMLQuery;
 using System.IO;
 using System.Linq;
-using System.Resources;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using HTMLQuery;
+using NUnit.Framework;
 
 namespace HTMLQueryTests
 {
-    [TestClass]
+    [TestFixture]
     public class Selectors
     {
         private Query _query;
 
-        public Selectors()
+        public Selectors()  
         {
             Reset();
         }
@@ -27,25 +24,25 @@ namespace HTMLQueryTests
         /// ID Selection tests
         /// </summary>
 
-        [TestMethod]
+        [Test]
         public void IdSelect()
         {
             Assert.AreEqual(1, _query.Select("#anId").Count());
         }
 
-        [TestMethod]
+        [Test]
         public void IdSelectFail()
         {
             Assert.AreEqual(0, _query.Select("#aClass").Count());
         }
 
-        [TestMethod]
+        [Test]
         public void ChildIdSelect()
         {
             Assert.AreEqual(1, _query.Select("#anotherId").Count());
         }
 
-        [TestMethod]
+        [Test]
         public void ChildIdSelectFail()
         {
             Assert.AreEqual(0, _query.Select("#anotherId", false).Count());
@@ -55,13 +52,13 @@ namespace HTMLQueryTests
         /// Class Selection tests
         /// </summary>
 
-        [TestMethod]
+        [Test]
         public void ClassSelect()
         {
             Assert.AreEqual(1, _query.Select(".aClass").Count());
         }
 
-        [TestMethod]
+        [Test]
         public void ClassSelectFail()
         {
             Assert.AreEqual(0, _query.Select(".inId").Count());
@@ -72,19 +69,19 @@ namespace HTMLQueryTests
         /// Element name Selection tests
         /// </summary>
 
-        [TestMethod]
+        [Test]
         public void ElementNameSelect()
         {
             Assert.AreEqual(1, _query.Select("body").Count());
         }
 
-        [TestMethod]
+        [Test]
         public void MultipleElementNameSelect()
         {
             Assert.AreEqual(3, _query.Select("div").Count());
         }
 
-        [TestMethod]
+        [Test]
         public void ElementNameSelectFail()
         {
             Assert.AreEqual(0, _query.Select("invalid").Count());
@@ -96,19 +93,19 @@ namespace HTMLQueryTests
         /// </summary>
 
 
-        [TestMethod]
+        [Test]
         public void ElementPropertySelect()
         {
             Assert.AreEqual("Option 2", _query.Select("[selected]selected").First().InnerText());
         }
 
-        [TestMethod]
+        [Test]
         public void ElementPropertySelectFail()
         {
             Assert.AreEqual(0, _query.Select("[selected]invalid").Count());
         }
 
-        [TestMethod]
+        [Test]
         public void ToplevelFlatten()
         {
             Assert.AreEqual(string.Empty, _query.Select("html").First().Flatten().InnerHtml().Source.Trim());

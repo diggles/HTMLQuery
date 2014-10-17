@@ -39,3 +39,4 @@ Icon
 */bin/*
 */obj/*
 *.suo
+*.user
