@@ -137,7 +137,7 @@ namespace HTMLQuery
             if (this.Source[0] != '<')
                 throw new InvalidOperationException("Method may only be used on a Query containing an element");
 
-            return Regex.Replace(this.InnerHtml().ToString(), "<[^>]*>*</[^>]*>", string.Empty);
+            return Regex.Replace(this.InnerHtml().ToString(), "<.*?>", string.Empty);
         }
 
         /// <summary>

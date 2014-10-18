@@ -1,22 +1,19 @@
-﻿using HTMLQuery;
+﻿using System;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
+using HTMLQuery;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
 
 namespace HTMLQueryTests
-{
+{   
     [TestFixture]
     public class Values
     {
-        private Query _query;
+        private readonly Query _query;
 
-        public Values()
-        {
-            Reset();
-        }
-
-        private void Reset()
-        {
+        public Values(){
             _query = new Query(File.ReadAllText("Values.html"));
         }
 
