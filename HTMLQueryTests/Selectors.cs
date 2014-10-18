@@ -10,12 +10,10 @@ namespace HTMLQueryTests
     {
         private Query _query;
 
-        public Selectors()  
-        {
-            Reset();
-        }
+        public Selectors() { }
 
-        private void Reset()
+        [SetUp]
+        public void Reset()
         {
             _query = new Query(File.ReadAllText("Selectors.html"));
         }

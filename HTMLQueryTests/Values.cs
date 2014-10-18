@@ -21,13 +21,21 @@ namespace HTMLQueryTests
         }
 
         /// <summary>
-        /// ID Selection tests
+        /// Inner Text
         /// </summary>
 
         [Test]
-        public void IdSelect()
+        public void InnerText()
         {
-            Assert.AreEqual(1, _query.Select("#anId").Count());
+            Assert.AreEqual("Copyright", _query.Select("#footer").First().InnerText());
         }
+
+        [Test]
+        public void InnerHtml()
+        {
+            Assert.AreEqual("<i>Copyright</i>", _query.Select("#footer").First().InnerHtml().Source);
+        }
+
+
     }
 }
