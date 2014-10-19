@@ -15,7 +15,7 @@ namespace HTMLQueryTests
         [SetUp]
         public void Reset()
         {
-            _query = new Query(File.ReadAllText("Selectors.html"));
+            _query = new Query(File.ReadAllText("Markup.html"));
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace HTMLQueryTests
         [Test]
         public void MultipleElementNameSelect()
         {
-            Assert.AreEqual(3, _query.Select("div").Count());
+            Assert.AreEqual(6, _query.Select("div").Count());
         }
 
         [Test]
@@ -103,11 +103,6 @@ namespace HTMLQueryTests
             Assert.AreEqual(0, _query.Select("[selected]invalid").Count());
         }
 
-        [Test]
-        public void ToplevelFlatten()
-        {
-            Assert.AreEqual(string.Empty, _query.Select("html").First().Flatten().InnerHtml().Source.Trim());
-        }
 
     }
 }

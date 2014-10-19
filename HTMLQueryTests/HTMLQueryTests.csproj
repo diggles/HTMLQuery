@@ -50,11 +50,9 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="Utilities.cs" />
     <Compile Include="Values.cs" />
-    <Content Include="Values.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Selectors.html">
+    <Content Include="Markup.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Compile Include="Selectors.cs" />

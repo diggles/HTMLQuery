@@ -13,8 +13,9 @@ namespace HTMLQueryTests
     {
         private readonly Query _query;
 
-        public Values(){
-            _query = new Query(File.ReadAllText("Values.html"));
+        public Values()
+        {
+            _query = new Query(File.ReadAllText("Markup.html"));
         }
 
         /// <summary>
