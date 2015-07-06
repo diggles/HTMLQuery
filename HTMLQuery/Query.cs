@@ -54,17 +54,19 @@ namespace HTMLQuery
                     }
                 case '.': // Element Class
                     {
-                        indices = this.GetSplitIndices(selector.Substring(1), searchChildren);
-                        break;
+                        return this.Select("[class]" + selector.Substring(1), searchChildren);
                     }
                 case '[': // Custom Element Property
-                    {
-                        indices = this.GetSplitIndices(selector.Substring(1, selector.IndexOf(']') - 1) + "=\"" + selector.Substring(selector.IndexOf(']') + 1) + "\"", searchChildren);
-                        break;
+                {
+                    string property = selector.Substring(1, selector.IndexOf(']') - 1);
+                    string value = selector.Substring(selector.IndexOf(']') + 1);
+                    string reg = string.Format("({0}=(?:\"|')[a-zA-Z0-9 ]*{1}[a-zA-Z0-9 ]*(?:\"|'))", property, value);
+                    indices = this.GetSplitIndices(reg, searchChildren);
+                    break;
                     }
                 default: // Element Type
                     {
-                        indices = this.GetSplitIndices("<" + selector, searchChildren);
+                        indices = this.GetSplitIndices("(<" + selector + ")", searchChildren);
                         break;
                     }
             }
@@ -78,6 +80,8 @@ namespace HTMLQuery
 
                 // Get the end tag
                 int end = this.FindEndTag(start);
+
+                //
 
                 temp.Add(
                     // Get the source for the complete tag and wrap with new Query
@@ -125,7 +129,11 @@ namespace HTMLQuery
                 throw new InvalidOperationException("Method may only be used on a Query containing an element");
 
             int start = this.Source.IndexOf('>') + 1;
-            return input.Substring(start, this.Source.Length - start - this.FindTagName(0).Length - 3).Trim();
+            int end = this.Source.Length - start - this.FindTagName(0).Length - 3;
+            if(end<0)
+                return string.Empty;
+
+            return input.Substring(start, end).Trim();
         }
 
         /// <summary>
@@ -165,13 +173,15 @@ namespace HTMLQuery
         /// <returns>An array of start indices</returns>
         private int[] GetSplitIndices(string splitter, bool searchChildren)
         {
-            if (!this.Source.Contains(splitter))
+            Regex matcher = new Regex(splitter);
+
+            if (!matcher.IsMatch(this.Source))
                 return new int[] {};
                 //throw new ArgumentException("No instances of " + splitter + " found");
 
             string workingSource = searchChildren ? this.Source : this.Flatten().Source;
 
-            string[] split = workingSource.InclusiveSplit(new string[] { splitter });
+            string[] split = workingSource.InclusiveSplit(new [] { splitter });
 
             int length = 0;
             List<int> indices = new List<int>();
@@ -179,7 +189,7 @@ namespace HTMLQuery
             foreach (string element in split)
             {
                 // Add the start index of the current split
-                if (element.Contains(splitter))
+                if (matcher.IsMatch(element))
                     indices.Add(length + 1);    
                 
                 // Increment start index
@@ -280,24 +290,28 @@ namespace HTMLQuery
                 throw new ArgumentException("The source must begin with a tag");
 
             string tag = this.FindTagName(input, start);
-            string startTag = "<" + tag;
+            string startTag = "<" + tag + "";
             string endTag = "</" + tag + ">";
 
             // Build a regex and split the string on the start and end tags
             // Regex is used because regular string.split removed the original split string
-            string[] parts = workingSource.InclusiveSplit(new string[]
+            string[] parts = workingSource.InclusiveSplit(new []
 			{
-				startTag,
-				endTag
+				"(" + startTag + ")",
+				"(" + endTag + ")"
 			});
 
             int index = parts[0].Length;
             int opens = 0;
+            int firstOpen = 0;
 
             for (int i = 1; i < parts.Length; i++)
             {
                 if (parts[i].StartsWith(startTag))
+                {
+                    if (firstOpen == 0) firstOpen = index;
                     opens++; // If we find an opening tag, increment
+                }
                 else if (parts[i].StartsWith(endTag))
                     opens--; // If we have an end tag, decrement 
 
@@ -307,8 +321,9 @@ namespace HTMLQuery
                     return index;
             }
 
+            // Assume the tag isn't closed
             if (opens > 0)
-                throw new NullReferenceException("No matching end tag for " + tag);
+                return firstOpen;
 
             throw new InvalidOperationException("No tag found");
         }

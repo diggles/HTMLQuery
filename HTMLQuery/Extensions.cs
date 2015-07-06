@@ -35,8 +35,8 @@ namespace HTMLQuery
         public static string[] InclusiveSplit(this string input, string[] delimiters)
         {
             // Build a regex and split the string on the start and end tags
-            // Regex is used because regular string.split removed the original split string
-            string pattern = "(" + string.Join("|", (from d in delimiters select Regex.Escape(d)).ToArray<string>()) + ")";
+            // Regex is used because regular string.split removes the original split string
+            string pattern = string.Join("|", delimiters);
             return Regex.Split(input, pattern);
         }
     }
